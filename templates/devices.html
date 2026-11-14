@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="tabs"><a class="on" href="/devices">My devices</a><a href="/devices/add">Add</a><a href="/download">Download</a></div>
+<div class="card"><h2>My devices</h2>
+<table class="table"><tr><th>Name</th><th>Code</th><th></th></tr>
+{% for d in devices %}
+<tr><td>{{ d.name }}</td><td><code>{{ d.device_code }}</code></td>
+<td>{% if d.online %}<span class="badge on">ON</span>{% else %}<span class="badge off">OFF</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="3"><a href="/devices/add">Add device</a></td></tr>{% endfor %}
+</table></div>
+{% endblock %}

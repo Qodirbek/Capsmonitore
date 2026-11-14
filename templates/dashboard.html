@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="hero"><h1>Salom, {{ user.name or user.email }}</h1><p class="muted">Hub dashboard</p></div>
+<div class="grid 3">
+<div class="card"><div class="muted">Online</div><div class="stat">{{ online }}/{{ devices|length }}</div></div>
+<div class="card"><div class="muted">Accounts</div><div class="stat">{{ accounts|length }}</div></div>
+<div class="card"><div class="muted">Telegram</div><div class="stat" style="font-size:16px">{{ ('@'+user.tg_username) if user.tg_username else '—' }}</div></div>
+</div>
+<div class="card" style="margin-top:14px"><h2>Devices</h2>
+<table class="table"><tr><th>Name</th><th>Code</th><th>Status</th></tr>
+{% for d in devices %}
+<tr><td>{{ d.name }}</td><td><code>{{ d.device_code }}</code></td>
+<td>{% if d.online %}<span class="badge on">ONLINE</span>{% else %}<span class="badge off">OFF</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="3" class="muted"><a href="/devices/add">Add device</a></td></tr>{% endfor %}
+</table>
+<div style="margin-top:12px"><a class="btn gold" href="/devices/add">+ Add device</a> <a class="btn" href="/download">Download</a></div>
+</div>
+<div class="card" style="margin-top:14px"><h2>Accounts</h2>
+<table class="table"><tr><th>Label</th><th>Coin</th><th>Balance</th><th>Status</th></tr>
+{% for a in accounts %}
+<tr><td>{{ a.label }}</td><td>{{ a.coin }}</td><td>{{ '%.4f'|format(a.balance or 0) }}</td><td>{{ a.status or '—' }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">Reporter ishlagach chiqadi</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

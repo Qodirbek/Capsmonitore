@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="uz"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>{% block title %}CAPS Monitor{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/static/css/style.css"/>
+</head><body><div class="wrap">
+<div class="nav">
+  <a class="brand" href="/"><span class="ico"></span> CAPS Monitor</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn ghost" href="/download">Download</a>
+    {% if user %}
+      <a class="btn ghost" href="/devices">Devices</a>
+      <a class="btn ghost" href="/profile">{{ user.name or user.email }}</a>
+      <a class="btn" href="/logout">Logout</a>
+    {% else %}
+      <a class="btn" href="/login">Login</a>
+      <a class="btn gold" href="/signup">Sign up</a>
+    {% endif %}
+  </div>
+</div>
+{% block body %}{% endblock %}
+</div></body></html>

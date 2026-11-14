@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card" style="max-width:420px;margin:20px auto">
+<h2>{{ 'Sign up' if mode=='signup' else 'Login' }}</h2>
+{% if error %}<p style="color:#f87171">{{ error }}</p>{% endif %}
+<form method="post">
+{% if mode=='signup' %}<div class="form-row"><label>Ism</label><input name="name"/></div>{% endif %}
+<div class="form-row"><label>Email</label><input name="email" type="email" required/></div>
+<div class="form-row"><label>Parol</label><input name="password" type="password" required minlength="6"/></div>
+<button class="btn gold" style="width:100%" type="submit">{{ 'Yaratish' if mode=='signup' else 'Kirish' }}</button>
+</form>
+<p class="muted" style="margin-top:14px">{% if mode=='signup' %} <a href="/login">Login</a>{% else %}<a href="/signup">Sign up</a>{% endif %}</p>
+</div>
+{% endblock %}

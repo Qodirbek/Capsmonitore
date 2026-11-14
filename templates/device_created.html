@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card" style="max-width:520px"><h2>Qurilma yaratildi</h2>
+<p><b>{{ name }}</b> · {{ platform }}</p>
+<pre style="background:#0b1220;padding:14px;border-radius:12px">device_code = {{ code }}</pre>
+<p class="muted">config.json ga yozing va worker ishga tushiring.</p>
+<a class="btn gold" href="/download">Download</a>
+<a class="btn" href="/devices">Devices</a>
+</div>
+{% endblock %}

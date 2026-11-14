@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card" style="max-width:480px"><h2>Add device</h2>
+<form method="post">
+<div class="form-row"><label>Nomi</label><input name="name" required placeholder="My Phone"/></div>
+<div class="form-row"><label>Platform</label>
+<select name="platform"><option value="android">Android</option><option value="pc">PC</option><option value="linux">Linux</option></select>
+</div>
+<button class="btn gold" type="submit">Yaratish</button>
+</form></div>
+{% endblock %}

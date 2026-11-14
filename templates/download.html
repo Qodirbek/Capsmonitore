@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="hero"><h1>Download worker</h1>
+<p class="muted">PC va Android alohida. Email/parol/cookie qurilmada qoladi.</p></div>
+<div class="dl-grid">
+<div class="dl-card"><h3>PC (Windows)</h3>
+<p class="muted">Tavsiya: <code>C:\caps-unified</code></p>
+<ol class="muted"><li>Zip oching</li><li>config.json</li><li>hub_url + device_code</li><li>start_pc.bat</li></ol>
+<a class="btn gold" href="/download/pc">Download PC</a></div>
+<div class="dl-card"><h3>Android (Termux)</h3>
+<p class="muted">Masalan <code>/sdcard/.../caps-unified</code></p>
+<ol class="muted"><li>Zip oching</li><li>config.json</li><li>bash start_android.sh</li></ol>
+<a class="btn gold" href="/download/android">Download Android</a></div>
+</div>
+{% endblock %}
