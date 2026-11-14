@@ -1,15 +1,45 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="hero"><h1>Download worker</h1>
-<p class="muted">PC va Android alohida. Email/parol/cookie qurilmada qoladi.</p></div>
+<div class="hero">
+  <h1>Download</h1>
+  <p class="muted">2 paket: to‘liq bot (captcha) + engil reporter (hub ulash)</p>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+  <h2>Captcha qachon yechiladi?</h2>
+  <p class="muted" style="line-height:1.7">
+    <b>caps-unified</b> har hisob uchun alohida ishlaydi:<br/>
+    1) Saytdan countdown / next claim vaqtini o‘qiydi<br/>
+    2) Vaqt kelganda (yoki 15 daqiqa oldin uyg‘onib) faucet sahifasini ochadi<br/>
+    3) Selectdagi captcha turini aniqlaydi (Icon → pCaptcha → hCaptcha → reCAPTCHA)<br/>
+    4) Icon ni lokal DB + AI bilan yechadi; qolganlarini Xevil/Gemini (Settings)<br/>
+    5) Claim muvaffaqiyatli → history + ~1 soat + 2–6 daqiqa random kutish<br/>
+    6) Kuniga maqsad ~21–24 claim (humanize max 3 marta kechiktirishi mumkin)<br/>
+    Ekran o‘chsa ham: <code>tmux</code> + <code>termux-wake-lock</code> bilan ishlayveradi.
+  </p>
+</div>
+
 <div class="dl-grid">
-<div class="dl-card"><h3>PC (Windows)</h3>
-<p class="muted">Tavsiya: <code>C:\caps-unified</code></p>
-<ol class="muted"><li>Zip oching</li><li>config.json</li><li>hub_url + device_code</li><li>start_pc.bat</li></ol>
-<a class="btn gold" href="/download/pc">Download PC</a></div>
-<div class="dl-card"><h3>Android (Termux)</h3>
-<p class="muted">Masalan <code>/sdcard/.../caps-unified</code></p>
-<ol class="muted"><li>Zip oching</li><li>config.json</li><li>bash start_android.sh</li></ol>
-<a class="btn gold" href="/download/android">Download Android</a></div>
+  <div class="dl-card">
+    <h3>1) CAPS Unified (to‘liq bot)</h3>
+    <p class="muted">Captcha yechish, claim, dice, withdraw — asosiy paket.</p>
+    <ol class="muted" style="padding-left:18px;line-height:1.55">
+      <li>Zip ni oching</li>
+      <li><b>PC:</b> <code>C:\caps-unified\</code></li>
+      <li><b>Android:</b> <code>/sdcard/pul/caps-unified/</code></li>
+      <li><code>python run.py</code> yoki <code>start_caps.sh</code></li>
+      <li>Brauzer: <code>http://127.0.0.1:5050</code> (yoki logdagi port)</li>
+    </ol>
+    <a class="btn gold" href="/download/full">Download CAPS Unified</a>
+  </div>
+  <div class="dl-card">
+    <h3>2) Worker / Reporter</h3>
+    <p class="muted">Hub ga online + balans yuboradi (parol/cookie yubormaydi).</p>
+    <p class="muted">Avval hub da <b>Add device</b> → <code>device_code</code> oling.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <a class="btn" href="/download/pc">PC reporter</a>
+      <a class="btn" href="/download/android">Android reporter</a>
+    </div>
+  </div>
 </div>
 {% endblock %}

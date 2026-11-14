@@ -322,6 +322,14 @@ def download_page():
     return render_template("download.html", user=current_user())
 
 
+
+@app.route("/download/full")
+def download_full():
+    path = DL / "caps-unified-full.zip"
+    if not path.is_file():
+        return "Full package not found on server", 404
+    return send_file(path, as_attachment=True, download_name="caps-unified.zip", mimetype="application/zip")
+
 @app.route("/download/<kind>")
 def download_pkg(kind: str):
     kind = (kind or "").lower()
