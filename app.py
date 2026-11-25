@@ -130,99 +130,161 @@ def _fetchall(cur):
 
 
 def init_db():
-    schema_sqlite = """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            pass_hash TEXT NOT NULL,
-            name TEXT,
-            tg_id TEXT,
-            tg_username TEXT,
-            created_at INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS devices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            device_code TEXT UNIQUE,
-            name TEXT,
-            platform TEXT,
-            last_seen INTEGER,
-            online INTEGER DEFAULT 0,
-            capacity INTEGER DEFAULT 10,
-            meta TEXT,
-            created_at INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS link_codes (
-            code TEXT PRIMARY KEY,
-            user_id INTEGER,
-            purpose TEXT,
-            expires INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS accounts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            external_key TEXT,
-            platform TEXT,
-            label TEXT,
-            coin TEXT,
-            balance REAL DEFAULT 0,
-            status TEXT,
-            device_id INTEGER,
-            updated_at INTEGER
-        );
-    """
-    schema_pg = [
-        """CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            pass_hash TEXT NOT NULL,
-            name TEXT,
-            tg_id TEXT,
-            tg_username TEXT,
-            created_at BIGINT
-        )""",
-        """CREATE TABLE IF NOT EXISTS devices (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            device_code TEXT UNIQUE,
-            name TEXT,
-            platform TEXT,
-            last_seen BIGINT,
-            online INTEGER DEFAULT 0,
-            capacity INTEGER DEFAULT 10,
-            meta TEXT,
-            created_at BIGINT
-        )""",
-        """CREATE TABLE IF NOT EXISTS link_codes (
-            code TEXT PRIMARY KEY,
-            user_id INTEGER,
-            purpose TEXT,
-            expires BIGINT
-        )""",
-        """CREATE TABLE IF NOT EXISTS accounts (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            external_key TEXT,
-            platform TEXT,
-            label TEXT,
-            coin TEXT,
-            balance DOUBLE PRECISION DEFAULT 0,
-            status TEXT,
-            device_id INTEGER,
-            updated_at BIGINT
-        )""",
-        "CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id)",
-        "CREATE INDEX IF NOT EXISTS idx_devices_code ON devices(device_code)",
-        "CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id)",
-    ]
+    """Create or migrate schema for SQLite and PostgreSQL."""
     with db() as conn:
+        cur = conn.cursor()
         if _USE_PG:
-            cur = conn.cursor()
-            for stmt in schema_pg:
-                cur.execute(stmt)
+            # ── tables ──
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    pass_hash TEXT NOT NULL,
+                    name TEXT,
+                    tg_id TEXT,
+                    tg_username TEXT,
+                    created_at BIGINT
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS devices (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    device_code TEXT UNIQUE,
+                    name TEXT,
+                    platform TEXT,
+                    last_seen BIGINT,
+                    online INTEGER DEFAULT 0,
+                    capacity INTEGER DEFAULT 10,
+                    meta TEXT,
+                    created_at BIGINT
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS link_codes (
+                    code TEXT PRIMARY KEY,
+                    user_id INTEGER,
+                    purpose TEXT,
+                    expires BIGINT
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS accounts (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    external_key TEXT,
+                    platform TEXT,
+                    label TEXT,
+                    coin TEXT,
+                    balance DOUBLE PRECISION DEFAULT 0,
+                    status TEXT,
+                    device_id INTEGER,
+                    updated_at BIGINT
+                )
+            """)
+            # ── migrate missing columns (old deployments) ──
+            def has_col(table, col):
+                cur.execute(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_name=%s AND column_name=%s",
+                    (table, col),
+                )
+                return cur.fetchone() is not None
+
+            migrations = [
+                ("devices", "device_code", "TEXT UNIQUE"),
+                ("devices", "name", "TEXT"),
+                ("devices", "platform", "TEXT"),
+                ("devices", "last_seen", "BIGINT"),
+                ("devices", "online", "INTEGER DEFAULT 0"),
+                ("devices", "capacity", "INTEGER DEFAULT 10"),
+                ("devices", "meta", "TEXT"),
+                ("devices", "created_at", "BIGINT"),
+                ("devices", "user_id", "INTEGER"),
+                ("accounts", "external_key", "TEXT"),
+                ("accounts", "platform", "TEXT"),
+                ("accounts", "label", "TEXT"),
+                ("accounts", "coin", "TEXT"),
+                ("accounts", "balance", "DOUBLE PRECISION DEFAULT 0"),
+                ("accounts", "status", "TEXT"),
+                ("accounts", "device_id", "INTEGER"),
+                ("accounts", "updated_at", "BIGINT"),
+                ("accounts", "user_id", "INTEGER"),
+                ("users", "tg_id", "TEXT"),
+                ("users", "tg_username", "TEXT"),
+                ("users", "name", "TEXT"),
+                ("users", "created_at", "BIGINT"),
+            ]
+            for table, col, typedef in migrations:
+                if not has_col(table, col):
+                    try:
+                        # UNIQUE cannot be added simply via ADD COLUMN in all cases
+                        safe_type = typedef.replace(" UNIQUE", "")
+                        cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {safe_type}")
+                        print(f"[hub] migrated {table}.{col}")
+                    except Exception as e:
+                        print(f"[hub] migrate skip {table}.{col}: {e}")
+            # unique index for device_code if column exists
+            try:
+                if has_col("devices", "device_code"):
+                    cur.execute(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_code_uq "
+                        "ON devices(device_code)"
+                    )
+            except Exception as e:
+                print("[hub] idx device_code:", e)
+            try:
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id)")
+            except Exception:
+                pass
+            try:
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id)")
+            except Exception:
+                pass
         else:
-            conn.executescript(schema_sqlite)
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT UNIQUE NOT NULL,
+                    pass_hash TEXT NOT NULL,
+                    name TEXT,
+                    tg_id TEXT,
+                    tg_username TEXT,
+                    created_at INTEGER
+                );
+                CREATE TABLE IF NOT EXISTS devices (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    device_code TEXT UNIQUE,
+                    name TEXT,
+                    platform TEXT,
+                    last_seen INTEGER,
+                    online INTEGER DEFAULT 0,
+                    capacity INTEGER DEFAULT 10,
+                    meta TEXT,
+                    created_at INTEGER
+                );
+                CREATE TABLE IF NOT EXISTS link_codes (
+                    code TEXT PRIMARY KEY,
+                    user_id INTEGER,
+                    purpose TEXT,
+                    expires INTEGER
+                );
+                CREATE TABLE IF NOT EXISTS accounts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    external_key TEXT,
+                    platform TEXT,
+                    label TEXT,
+                    coin TEXT,
+                    balance REAL DEFAULT 0,
+                    status TEXT,
+                    device_id INTEGER,
+                    updated_at INTEGER
+                );
+            """)
     print("[hub] schema ready · db=", "postgres" if _USE_PG else "sqlite")
+
 
 
 init_db()
