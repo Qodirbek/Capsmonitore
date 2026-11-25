@@ -1,29 +1,34 @@
-# CAPS Monitor Hub
+# CAPS Monitor Hub (Professional)
 
-Sign up / Login · Devices · Download PC/Android · Account distribution (monitor)
+Nazoratchi + xavfsizlik qatlami. Render + PostgreSQL.
 
-## Deploy Render
+## Deploy (Render)
 - Build: `pip install -r requirements.txt`
-- Start: `gunicorn app:app --bind 0.0.0.0:$PORT`
-- Env: `SECRET_KEY`, optional `TG_BOT_TOKEN`
+- Start: `gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4`
+- Env:
+  - `SECRET_KEY` (majburiy, uzun random)
+  - `DATABASE_URL` = Render Postgres connection string
+  - `TG_BOT_TOKEN` (ixtiyoriy)
 
 ## Local
 ```bash
 pip install -r requirements.txt
+export DATABASE_URL="postgresql://..."
 python app.py
 ```
 
 ## Security
-Workers send only status/balance. No passwords or cookies to the hub.
+- Worker faqat status / balance yuboradi
+- Cookie, password, email, wallet **hech qachon** hubga ketmaydi
+- Device code bilan autentifikatsiya
 
-## Captcha (CAPS Unified)
+## CAPS Unified (bot)
+Download: **/download/full** → `caps-unified.zip`
 
-To‘liq bot `downloads/caps-unified-full.zip` — saytdan **Download CAPS Unified**.
+Professional humanize:
+- Har akkaunt har kuni random 18–24 claim target
+- Wait 52–110 min real jitter (pattern yo‘q)
+- 100–200 akkaunt, 16GB RAM da bemalol
+- Local IconCaptcha + ixtiyoriy Gemini
 
-Ishlash:
-1. Countdown tugagach claim oynasi
-2. Captcha yechiladi (Icon lokal, boshqalar API)
-3. ~1 soat + random kutish
-4. Kuniga ~21–24 claim / hisob
-
-Reporter faqat hub monitori; captcha yechmaydi.
+Reporter faqat monitor; captcha yechmaydi.

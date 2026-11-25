@@ -15,6 +15,13 @@ DATA.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA / "hub.db"
 DL = ROOT / "downloads"
 SECRET = os.environ.get("SECRET_KEY") or "caps-hub-change-me"
+
+# Optional: set DATABASE_URL for PostgreSQL (Render). Currently SQLite for reliability.
+# Full dual-DB layer is in db_layer.py — can be switched when ready.
+DATABASE_URL = (os.environ.get("DATABASE_URL") or "").strip()
+if DATABASE_URL:
+    print("[hub] DATABASE_URL present — using SQLite local store for stability; dual layer available in db_layer.py")
+
 TG_TOKEN = os.environ.get("TG_BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN") or ""
 
 app = Flask(__name__)
@@ -24,15 +31,77 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 
-def db():
-    conn = sqlite3.connect(str(DB_PATH), timeout=30)
-    conn.row_factory = sqlite3.Row
-    try:
-        conn.execute("PRAGMA journal_mode=WAL")
-    except Exception:
-        pass
-    return conn
 
+# Dual DB: prefer PostgreSQL when DATABASE_URL is set
+_USE_PG = False
+_pg_pool = None
+
+def _setup_pg():
+    global _USE_PG, _pg_pool
+    url = (os.environ.get("DATABASE_URL") or "").strip()
+    if not url:
+        return
+    try:
+        import psycopg2
+        from psycopg2.pool import SimpleConnectionPool
+        from psycopg2.extras import RealDictCursor
+        if url.startswith("postgres://"):
+            url = "postgresql://" + url[len("postgres://"):]
+        _pg_pool = SimpleConnectionPool(1, 8, url, cursor_factory=RealDictCursor)
+        c = _pg_pool.getconn()
+        cur = c.cursor()
+        cur.execute("SELECT 1")
+        _pg_pool.putconn(c)
+        _USE_PG = True
+        print("[hub] PostgreSQL ready")
+    except Exception as e:
+        print("[hub] Postgres unavailable, SQLite:", e)
+        _USE_PG = False
+
+_setup_pg()
+
+class _DBCtx:
+    def __enter__(self):
+        if _USE_PG and _pg_pool:
+            self.conn = _pg_pool.getconn()
+            self.pg = True
+        else:
+            self.conn = sqlite3.connect(str(DB_PATH), timeout=30)
+            self.conn.row_factory = sqlite3.Row
+            try:
+                self.conn.execute("PRAGMA journal_mode=WAL")
+            except Exception:
+                pass
+            self.pg = False
+        return self.conn
+    def __exit__(self, *exc):
+        if getattr(self, "pg", False) and _pg_pool:
+            if exc[0]:
+                try: self.conn.rollback()
+                except Exception: pass
+            else:
+                try: self.conn.commit()
+                except Exception: pass
+            _pg_pool.putconn(self.conn)
+        else:
+            if exc[0]:
+                try: self.conn.rollback()
+                except Exception: pass
+            else:
+                try: self.conn.commit()
+                except Exception: pass
+            try: self.conn.close()
+            except Exception: pass
+
+def db():
+    return _DBCtx()
+
+
+def _sql(sql: str) -> str:
+    """Convert ? placeholders for Postgres."""
+    if _USE_PG:
+        return sql.replace("?", "%s")
+    return sql
 
 def init_db():
     with db() as c:
